@@ -80,6 +80,10 @@ class ResultManager(object):
             pickle.dump(self._meta_info, f)
 
     def print_meta_info(self):
+        """
+        Print all meta info of saved data
+        :return:
+        """
         table = PrettyTable()
         table.add_column("ID", [i for i in range(len(self._meta_info.names))])
         table.add_column("Topic", self._meta_info.topics)
@@ -91,14 +95,27 @@ class ResultManager(object):
         print(table)
 
     def print_data_names(self):
-        for name in self._meta_info.names:
-            print(name)
+        """
+        Print all data names
+        :return:
+        """
+        for idx, name in enumerate(self._meta_info.names):
+            print("%s: %s" % (idx, name))
 
     def print_data_comments(self):
+        """
+        Print all comments
+        :return:
+        """
         for idx, comment in enumerate(self._meta_info.comments):
             print("%s: %s" % (idx, comment))
 
     def load_data_by_name(self, data_name):
+        """
+        Load data by name, Assertion happens when given a wrong name, and if there are 2 data of the same name, a warning would appear.
+        :param data_name: str, name of the saved data
+        :return: Saved data
+        """
         assert data_name in self._meta_info.names, "%s not found" % data_name
         if self._meta_info.names.count(data_name) > 1:
             warnings.warn("More than 1 instance of '%s' found, returning the first one" % data_name)
@@ -106,11 +123,20 @@ class ResultManager(object):
         return self.load_data_by_id(data_id)
 
     def load_data_by_id(self, data_id):
+        """
+        Load data by ID
+        :param data_id: int, Data id, can be found by printing the meta info.
+        :return: Saved data
+        """
         data_path = self._meta_info.paths[data_id]
         with open(data_path, 'rb') as f:
             return pickle.load(f)
 
     def clear_data(self):
+        """
+        Clear all saved data and delete meta info.
+        :return:
+        """
         for path in self._meta_info.paths:
             os.remove(path)
         for topic in set(self._meta_info.topics):

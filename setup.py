@@ -24,7 +24,7 @@ setup(
     platforms=["all"],
     url='https://github.com/hosea1008/ExpDataManager',
     classifiers=[
-        'Development Status :: 1 - Beta',
+        'Development Status :: 4 - Beta',
         'Operating System :: OS Independent',
         'Intended Audience :: Developers',
         'License :: OSI Approved :: BSD License',

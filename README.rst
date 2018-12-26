@@ -33,7 +33,12 @@ Documentation
 
 This project is still simple, therefore no docs...
 
+Requirements
+------------
+
+* ``prettytable>=0.7.2``
+
 Note
 ----
 
-``ResultManager`` is developed by Python 3.5 and only tested on Python 3.5
+``ResultManager`` is developed by Python 3.5 and only tested on Python 3.5 and Python 2.7

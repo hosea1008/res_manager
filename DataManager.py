@@ -1,10 +1,12 @@
 from __future__ import print_function
 import pickle
+import warnings
 import os
-import time
+import datetime
 import hashlib
 
 from prettytable import PrettyTable
+
 
 class MetaInfo(object):
     def __init__(self, manager_path):
@@ -50,18 +52,27 @@ class DataManager(object):
         """
         assert len(name + commit_comment) > 0, "Name and comment cannot be all None"
 
-        save_time = time.localtime()
-        curr_time_str = time.strftime("%Y-%m-%d_%H:%M:%S", save_time)
+        save_time = datetime.datetime.now()
+        curr_time_str = save_time.strftime("%Y-%m-%d_%H:%M:%S.%f")
         if name == '':
             name = hashlib.md5(''.join([curr_time_str, commit_comment]).encode('utf-8')).hexdigest()
+        name_str = name.replace(' ', '_')
         data_type_str = str(type(data)).split("'")[1].split('.')[-1]
-        save_full_path = "%s/%s_%s_%s.%s" % (
-            self.manager_path, topic.replace(' ', '_'), name.replace(' ', '_'), curr_time_str, data_type_str)
+
+        save_full_path = "%s/%s_%s.%s" % (
+            self.manager_path, name_str, curr_time_str, data_type_str)
+
+        if topic != '':
+            topic_str = topic.replace(' ', '_')
+            if not os.path.exists("%s/%s" % (self.manager_path, topic_str)):
+                os.mkdir("%s/%s" % (self.manager_path, topic_str))
+            save_full_path = "%s/%s/%s_%s.%s" % (self.manager_path, topic_str, name.replace(' ', '_'), curr_time_str, data_type_str)
+
         with open(save_full_path, 'wb') as f:
             pickle.dump(data, f)
 
-        self._meta_info.topics.append(topic)
-        self._meta_info.names.append(name)
+        self._meta_info.topics.append(topic_str)
+        self._meta_info.names.append(name_str)
         self._meta_info.save_times.append(save_time)
         self._meta_info.comments.append(commit_comment)
         self._meta_info.paths.append(save_full_path)
@@ -73,7 +84,7 @@ class DataManager(object):
         table.add_column("ID", [i for i in range(len(self._meta_info.names))])
         table.add_column("Topic", self._meta_info.topics)
         table.add_column("Name", self._meta_info.names)
-        table.add_column("Save time", [time.strftime("%Y-%m-%d %H:%M:%S", item) for item in self._meta_info.save_times])
+        table.add_column("Save time", [item.strftime("%Y-%m-%d %H:%M:%S") for item in self._meta_info.save_times])
         table.add_column("Comment", self._meta_info.comments)
         table.add_column("Path", self._meta_info.paths)
 
@@ -88,6 +99,9 @@ class DataManager(object):
             print("%s: %s" % (idx, comment))
 
     def load_data_by_name(self, data_name):
+        assert data_name in self._meta_info.names, "%s not found" % data_name
+        if self._meta_info.names.count(data_name) > 1:
+            warnings.warn("More than 1 instance of '%s' found, returning the first one" % data_name)
         data_id = self._meta_info.names.index(data_name)
         return self.load_data_by_id(data_id)
 
@@ -99,13 +113,23 @@ class DataManager(object):
     def clear_data(self):
         for path in self._meta_info.paths:
             os.remove(path)
+        for topic in set(self._meta_info.topics):
+            os.rmdir("%s/%s" % (self.manager_path, topic))
+        if os.path.exists("%s/meta_info.info" % self.manager_path):
+            os.remove("%s/meta_info.info" % self.manager_path)
         self._meta_info = MetaInfo(self.manager_path)
 
 
 if __name__ == '__main__':
     dm = DataManager('data')
-    dm.save_data(dm, topic='topic1', name='test', commit_comment='saving')
+    dm.clear_data()
+    dm.save_data({0:1,2:9}, topic='topic1', name='test', commit_comment='saving')
+    dm.save_data([1,2,3], topic='topic 2', name='test 2', commit_comment='saving tet')
+    dm.save_data([1, 2, 3], topic='topic 2', name='test 2', commit_comment='saving tet')
+    dm.save_data(dm, topic='topic 2', name='test 3', commit_comment='saving tet')
+    dm.save_data(dm, topic='topic 2', name='', commit_comment='aa')
     dm.print_meta_info()
     # dm.print_data_names()
     # dm.print_data_comments()
-    # print(dm.load_data_by_name('reduce_uv'))
+    # print(dm.load_data_by_name('test_2'))
+    # print(dm.load_data_by_id(1))

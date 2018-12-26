@@ -4,6 +4,12 @@ Experimental Results Manager
 
 This project helps you to handle your experimental results efficiently when doing your research. Basically it uses ``pickle`` to save and load the data, now we provide you with some high-level interfaces so that you can get rid of pickle dumping and loading from disk all the time. Also, with a given ``topic`` parameter when saving data, it can automatically build different directories for different topic.
 
+
+Usage
+=====
+
+Just start with ``from res_manager import ResultManager``, now you can create an object with ``rm = ResultManager(path)`` and then use it to save, load, clear and preview your data.
+
 ResultManager
 =============
 

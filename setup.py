@@ -10,7 +10,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='res_manager',
-    version=1.0,
+    version='1.0.2',
     description=(
         'This tool helps you to manage your experimental results in a more elegant way, saving your experiment data by pickle with some high-level interfaces to save, load and preview.'
     ),
@@ -22,7 +22,7 @@ setup(
     license='GPL License',
     packages=find_packages(),
     platforms=["all"],
-    url='https://github.com/hosea1008/ExpDataManager',
+    url='https://github.com/hosea1008/res_manager',
     classifiers=[
         'Development Status :: 4 - Beta',
         'Operating System :: OS Independent',
@@ -36,7 +36,7 @@ setup(
         'Programming Language :: Python :: 3.4',
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
-        'Topic :: Software Development :: Libraries'
+        'Topic :: Utilities'
     ],
     install_requires=['prettytable>=0.7.2']
 )

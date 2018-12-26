@@ -23,13 +23,13 @@ class MetaInfo(object):
         self.paths = []
 
 
-class DataManager(object):
+class ResultManager(object):
     def __init__(self, manager_path):
         """
-        Create data manager
+        Create result manager
         :param manager_path: path to data directory
         """
-        assert os.path.exists(manager_path), "Data manager path not exists"
+        assert os.path.exists(manager_path), "Result manager path not exists"
 
         self.manager_path = manager_path
         self._load_meta_info()
@@ -121,7 +121,7 @@ class DataManager(object):
 
 
 if __name__ == '__main__':
-    dm = DataManager('data')
+    dm = ResultManager('data')
     dm.clear_data()
     dm.save_data({0:1,2:9}, topic='topic1', name='test', commit_comment='saving')
     dm.save_data([1,2,3], topic='topic 2', name='test 2', commit_comment='saving tet')

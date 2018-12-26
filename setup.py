@@ -10,7 +10,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='res_manager',
-    version='1.0.2',
+    version='1.0.3',
     description=(
         'This tool helps you to manage your experimental results in a more elegant way, saving your experiment data by pickle with some high-level interfaces to save, load and preview.'
     ),

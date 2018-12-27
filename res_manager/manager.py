@@ -67,6 +67,8 @@ class ResultManager(object):
             if not os.path.exists("%s/%s" % (self.manager_path, topic_str)):
                 os.mkdir("%s/%s" % (self.manager_path, topic_str))
             save_full_path = "%s/%s/%s_%s.%s" % (self.manager_path, topic_str, name.replace(' ', '_'), curr_time_str, data_type_str)
+        else:
+            topic_str = ''
 
         with open(save_full_path, 'wb') as f:
             pickle.dump(data, f)
@@ -145,17 +147,3 @@ class ResultManager(object):
             os.remove("%s/meta_info.info" % self.manager_path)
         self._meta_info = MetaInfo(self.manager_path)
 
-
-if __name__ == '__main__':
-    dm = ResultManager('data')
-    dm.clear_data()
-    dm.save_data({0:1,2:9}, topic='topic1', name='test', commit_comment='saving')
-    dm.save_data([1,2,3], topic='topic 2', name='test 2', commit_comment='saving tet')
-    dm.save_data([1, 2, 3], topic='topic 2', name='test 2', commit_comment='saving tet')
-    dm.save_data(dm, topic='topic 2', name='test 3', commit_comment='saving tet')
-    dm.save_data(dm, topic='topic 2', name='', commit_comment='aa')
-    dm.print_meta_info()
-    # dm.print_data_names()
-    # dm.print_data_comments()
-    # print(dm.load_data_by_name('test_2'))
-    # print(dm.load_data_by_id(1))

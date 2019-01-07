@@ -142,7 +142,7 @@ class ResultManager(object):
         with self._ConnCursor(self.db_path) as [_, cursor]:
             lines = cursor.execute("SELECT ID, INFO FROM META_INFO").fetchall()
             for line in lines:
-                print("ID: %d\t\tName: %s" % (line[0], line[1]))
+                print("ID: %d\t\tComment: %s" % (line[0], line[1]))
 
     def _load_by_name(self, data_name):
         """

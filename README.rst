@@ -9,7 +9,7 @@ Since it is based on ``pickle``, in theory you can use it to manage all types of
 Usage
 =====
 
-Just start with ``from res_manager import ResultManager``, now you can create an object with ``rm = ResultManager(path)`` and then use it to save, load, clear and preview your data.
+Just start with ``from res_manager import ResultManager``, now you can create an object with ``rm = ResultManager(path)`` and then use it to save, load, delete and preview your data.
 
 Install ResultManager with ``pip install res-manager``
 
@@ -19,17 +19,18 @@ Install ResultManager with ``pip install res-manager``
     >>> rm = ResultManager('data')
     >>> rm.save_data([1, 2, 3], topic='test saving', name='data1', commit_comment='Test saving a list')
     >>> rm.save_data(65535, topic='test saving', commit_comment='Test saving a number without a name')
-    >>> rm.save_data(rm, topic='topic 2', commit_comment='Test saving an object')
-    >>> rm.save_data({0:1,1:'string'}, name='dict_without_topic')
+    >>> rm.save_data(rm, topic='topic 2', name="object of \"ResultManager\"" commit_comment='Test saving an object')
+    >>> rm.save_data({0:1,1:'string'}, name="hongshan's dict without topic")
     >>> rm.print_meta_info()
     ...
-    >>> rm.load_data_by_id(5)
+    >>> rm.load_data_by_id(3)
     <res_manager.manager.ResultManager object at 0x7f29c8587470>
     >>> rm.load_data_by_name('data1')
     [1, 2, 3]
     >>> rm.load_data_by_name('dict_without_topic')
     {0: 1, 1: 'string'}
     >>> rm.delete_data_by_id(3)
+    >>> rm.update_meta(5,comment="haha")
 
 ResultManager
 =============
@@ -76,4 +77,5 @@ Key release notes
 
 * ``1.0.3`` Save data to pickle files, initial version.
 * ``2.0.0`` Introduce SQLite to save and manage data.
-* ``2.1.1`` Securely closing SQLite connections under any circumstances.
+* ``2.1.0`` Securely closing SQLite connections under any circumstances.
+* ``2.2.0`` Add support to quotation marks, add ``update_meta`` interface.

@@ -41,20 +41,28 @@ class ResultManager(object):
     def _create_table(self):
         with self._ConnCursor(self.db_path) as [conn, cursor]:
             cursor.execute(
-                "CREATE TABLE META_INFO(ID INTEGER PRIMARY KEY AUTOINCREMENT, NAME NVARCHAR(200), TOPIC NVARCHAR(200), DATATYPE VARCHAR(50), INFO NVARCHAR(1000), [SAVETIME] TIMESTAMP)")
-            cursor.execute("CREATE TABLE DATA(ID INTEGER PRIMARY KEY AUTOINCREMENT, DATAFIELD BLOB)")
+                "CREATE TABLE META_INFO(ID INTEGER PRIMARY KEY AUTOINCREMENT, "
+                                        "NAME NVARCHAR(200), "
+                                        "TOPIC NVARCHAR(200), "
+                                        "DATATYPE VARCHAR(50), "
+                                        "INFO NVARCHAR(1000), "
+                                        "[SAVETIME] TIMESTAMP)")
+
+            cursor.execute("CREATE TABLE DATA(ID INTEGER PRIMARY KEY AUTOINCREMENT,"
+                                            " DATAFIELD BLOB)")
             conn.commit()
 
-    def save_data(self, data, topic='', name='', commit_comment=''):
+    def save(self, data, topic='', name='', comment=''):
         """
         Save data
         :param data: data to be saved
         :param topic: topic of the current data, a higher level than name, helps you to manager data of different topic
         :param name: name of the data, can be empty
-        :param commit_comment: comment of the saving data
+        :param comment: comment of the saving data
         :return:
         """
-        assert len(name + commit_comment) > 0, "Name and comment cannot be all None"
+        for string, field_name in zip([topic, name, comment], ['topic', 'name', 'comment']):
+            assert string.find("''") < 0, "Illegal string \"''\" found in %s" % field_name
 
         save_time = datetime.datetime.now()
         curr_time_str = save_time.strftime("%Y-%m-%d %H:%M:%S.%f")
@@ -63,13 +71,14 @@ class ResultManager(object):
         pdata = pickle.dumps(data, pickle.HIGHEST_PROTOCOL)
         with self._ConnCursor(self.db_path) as [conn, cursor]:
             cursor.execute(
-                "INSERT INTO META_INFO (NAME, TOPIC, DATATYPE, INFO, SAVETIME) VALUES ('%s', '%s', '%s', '%s', '%s')" % (
-                    name, topic, data_type_str, commit_comment, curr_time_str))
+                "INSERT INTO META_INFO (NAME, TOPIC, DATATYPE, INFO, SAVETIME) VALUES (?, ?, ?, ?, ?)",
+                (name, topic, data_type_str, comment, curr_time_str))
+
             cursor.execute("INSERT INTO DATA (DATAFIELD) VALUES (?)", (sqlite3.Binary(pdata),))
 
             conn.commit()
 
-    def delete_data_by_id(self, data_id):
+    def delete_by_id(self, data_id):
         """
         Delete data by ID
         :param data_id: int, Data id, can be found by printing the meat info
@@ -78,6 +87,25 @@ class ResultManager(object):
         with self._ConnCursor(self.db_path) as [conn, cursor]:
             cursor.execute("DELETE FROM META_INFO WHERE ID=?", (data_id,))
             cursor.execute("DELETE FROM DATA WHERE ID=?", (data_id,))
+            conn.commit()
+
+    def update_meta(self, id, name=None, topic=None, comment=None):
+        """
+        Update meta info by ID
+        :param id: Data ID
+        :param name: Data name
+        :param topic: Data topic
+        :param comment: Data comment
+        :return:
+        """
+
+        for string, field_name in zip([topic, name, comment], ['topic', 'name', 'comment']):
+            assert string.find("''") < 0, "Illegal string \"''\" found in %s" % field_name
+
+        with self._ConnCursor(self.db_path) as [conn, cursor]:
+            for field_name, value in zip(["NAME", "TOPIC", "INFO"], [name, topic, comment]):
+                if value is not None:
+                    cursor.execute("UPDATE META_INFO SET %s=? WHERE ID=?" % field_name, (value, id,))
             conn.commit()
 
     # THE FOLLOWING FUNCTIONS EXIT WITHOUT COMMIT TO SQLITE (READ ONLY)
@@ -96,7 +124,7 @@ class ResultManager(object):
                 table.add_row(line)
             print(table)
 
-    def print_data_names(self):
+    def print_names(self):
         """
         Print all data names
         :return:
@@ -106,7 +134,7 @@ class ResultManager(object):
             for line in lines:
                 print("ID: %d\t\tName: %s" % (line[0], line[1]))
 
-    def print_data_comments(self):
+    def print_comments(self):
         """
         Print all comments
         :return:
@@ -116,7 +144,7 @@ class ResultManager(object):
             for line in lines:
                 print("ID: %d\t\tName: %s" % (line[0], line[1]))
 
-    def load_data_by_name(self, data_name):
+    def load_by_name(self, data_name):
         """
         Load data by name, Assertion happens when given a wrong name, and if there are 2 data of the same name, a warning would appear.
         :param data_name: str, name of the saved data
@@ -134,13 +162,14 @@ class ResultManager(object):
                 if len(ids) > 1:
                     data_list = []
                     for id in ids:
-                        data_list.append(self.load_data_by_id(id))
+                        data_list.append(self.load_by_id(id))
                     return_data = tuple(data_list)
+                    warnings.warn("Found more than one instance of \"%s\"" % data_name)
                 else:
-                    return_data = self.load_data_by_id(ids[0])
+                    return_data = self.load_by_id(ids[0])
         return return_data
 
-    def load_data_by_id(self, data_id):
+    def load_by_id(self, data_id):
         """
         Load data by ID
         :param data_id: int, Data id, can be found by printing the meta info.
@@ -154,3 +183,18 @@ class ResultManager(object):
             else:
                 data = pickle.loads(cursor.execute("SELECT DATAFIELD FROM DATA WHERE ID=?", (data_id,)).fetchone()[0])
         return data
+
+    def load(self, id=None, name=None):
+        """
+        Load data by ID or Name, load by ID by default
+        :param id: Data ID
+        :param name: Data Name
+        :return:
+        """
+        if id:
+            return self.load_by_id(id)
+        elif name:
+            return self.load_by_name(name)
+        else:
+            warnings.warn("At least one of ID or Name should be provided")
+            return None

@@ -113,19 +113,18 @@ class ResultManager(object):
         """
 
         conn, cursor = self._get_conn_cursor()
-        names = [line[0] for line in cursor.execute("SELECT NAME FROM NETA_INFO").fetchall()]
+        names = [line[0] for line in cursor.execute("SELECT NAME FROM META_INFO").fetchall()]
         assert data_name in names, "%s not found" % data_name
 
         ids = [line[0] for line in cursor.execute("SELECT id FROM meta_info WHERE name=?", (data_name,)).fetchall()]
-        conn.close()
         cursor.close()
+        conn.close()
 
         if len(ids) > 1:
-            warnings.warn("More than 1 instance of '%s' found" % data_name)
             data_list = []
             for id in ids:
                 data_list.append(self.load_data_by_id(id))
-            return data_list
+            return tuple(data_list)
         return self.load_data_by_id(ids[0])
 
     def load_data_by_id(self, data_id):
@@ -143,8 +142,3 @@ class ResultManager(object):
         cursor.execute("DELETE FROM META_INFO WHERE ID=?", (data_id,))
         cursor.execute("DELETE FROM DATA WHERE ID=?", (data_id,))
         self._commit_release(conn, cursor)
-
-
-if __name__ == '__main__':
-    rm = ResultManager('data')
-    rm.save_data([1, 2, 3], topic='topic 1', name='data 1', commit_comment='test')

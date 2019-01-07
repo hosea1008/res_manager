@@ -1,10 +1,10 @@
 from __future__ import print_function, unicode_literals
-import pickle
-import warnings
-import os
+
 import datetime
-import hashlib
+import os
+import pickle
 import sqlite3
+import warnings
 
 from prettytable import PrettyTable
 
@@ -25,22 +25,23 @@ class ResultManager(object):
             print("No previous database found, creating a new one...")
             self._create_table()
 
-    def _create_table(self):
-        conn, cursor = self._get_conn_cursor()
-        cursor.execute(
-            "CREATE TABLE META_INFO(ID INTEGER PRIMARY KEY AUTOINCREMENT, NAME NVARCHAR(200), TOPIC NVARCHAR(200), DATATYPE VARCHAR(50), INFO NVARCHAR(1000), [SAVETIME] TIMESTAMP)")
-        cursor.execute("CREATE TABLE DATA(ID INTEGER PRIMARY KEY AUTOINCREMENT, DATAFIELD BLOB)")
-        self._commit_release(conn, cursor)
-
     def _get_conn_cursor(self):
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
         return conn, cursor
 
-    def _commit_release(self, conn, cursor):
+    def _commit_release(self, conn, cursor, commit=False):
         cursor.close()
-        conn.commit()
+        if commit:
+            conn.commit()
         conn.close()
+
+    def _create_table(self):
+        conn, cursor = self._get_conn_cursor()
+        cursor.execute(
+            "CREATE TABLE META_INFO(ID INTEGER PRIMARY KEY AUTOINCREMENT, NAME NVARCHAR(200), TOPIC NVARCHAR(200), DATATYPE VARCHAR(50), INFO NVARCHAR(1000), [SAVETIME] TIMESTAMP)")
+        cursor.execute("CREATE TABLE DATA(ID INTEGER PRIMARY KEY AUTOINCREMENT, DATAFIELD BLOB)")
+        self._commit_release(conn, cursor, commit=True)
 
     def save_data(self, data, topic='', name='', commit_comment=''):
         """
@@ -59,11 +60,15 @@ class ResultManager(object):
 
         pdata = pickle.dumps(data, pickle.HIGHEST_PROTOCOL)
         conn, cursor = self._get_conn_cursor()
-        cursor.execute(
-            "INSERT INTO META_INFO (NAME, TOPIC, DATATYPE, INFO, SAVETIME) VALUES ('%s', '%s', '%s', '%s', '%s')" % (
-                name, topic, data_type_str, commit_comment, curr_time_str))
-        cursor.execute("INSERT INTO DATA (DATAFIELD) VALUES (?)", (sqlite3.Binary(pdata),))
-        self._commit_release(conn, cursor)
+        try:
+            cursor.execute(
+                "INSERT INTO META_INFO (NAME, TOPIC, DATATYPE, INFO, SAVETIME) VALUES ('%s', '%s', '%s', '%s', '%s')" % (
+                    name, topic, data_type_str, commit_comment, curr_time_str))
+            cursor.execute("INSERT INTO DATA (DATAFIELD) VALUES (?)", (sqlite3.Binary(pdata),))
+        except Exception as e:
+            print(e)
+        finally:
+            self._commit_release(conn, cursor, commit=True)
 
     def print_meta_info(self):
         """
@@ -74,12 +79,15 @@ class ResultManager(object):
         table.field_names = ["ID", "Name", "Topic", "Type", "Commit comments", "Save time"]
 
         conn, cursor = self._get_conn_cursor()
-        meta_infos = cursor.execute("SELECT * FROM META_INFO").fetchall()
-        cursor.close()
-        conn.close()
-        for line in meta_infos:
-            table.add_row(line)
-        print(table)
+        try:
+            meta_infos = cursor.execute("SELECT * FROM META_INFO").fetchall()
+            for line in meta_infos:
+                table.add_row(line)
+            print(table)
+        except Exception as e:
+            print(e)
+        finally:
+            self._commit_release(conn, cursor)
 
     def print_data_names(self):
         """
@@ -87,11 +95,14 @@ class ResultManager(object):
         :return:
         """
         conn, cursor = self._get_conn_cursor()
-        lines = cursor.execute("SELECT ID, NAME FROM META_INFO").fetchall()
-        cursor.close()
-        conn.close()
-        for line in lines:
-            print("ID: %d\t\tName: %s" % (line[0], line[1]))
+        try:
+            lines = cursor.execute("SELECT ID, NAME FROM META_INFO").fetchall()
+            for line in lines:
+                print("ID: %d\t\tName: %s" % (line[0], line[1]))
+        except Exception as e:
+            print(e)
+        finally:
+            self._commit_release(conn, cursor)
 
     def print_data_comments(self):
         """
@@ -99,11 +110,14 @@ class ResultManager(object):
         :return:
         """
         conn, cursor = self._get_conn_cursor()
-        lines = cursor.execute("SELECT ID, INFO FROM META_INFO").fetchall()
-        cursor.close()
-        conn.close()
-        for line in lines:
-            print("ID: %d\t\tName: %s" % (line[0], line[1]))
+        try:
+            lines = cursor.execute("SELECT ID, INFO FROM META_INFO").fetchall()
+            for line in lines:
+                print("ID: %d\t\tName: %s" % (line[0], line[1]))
+        except Exception as e:
+            print(e)
+        finally:
+            self._commit_release(conn, cursor)
 
     def load_data_by_name(self, data_name):
         """
@@ -111,21 +125,29 @@ class ResultManager(object):
         :param data_name: str, name of the saved data
         :return: Saved data
         """
-
         conn, cursor = self._get_conn_cursor()
-        names = [line[0] for line in cursor.execute("SELECT NAME FROM META_INFO").fetchall()]
-        assert data_name in names, "%s not found" % data_name
+        try:
+            names = [line[0] for line in cursor.execute("SELECT NAME FROM META_INFO").fetchall()]
+            if data_name not in names:
+                warnings.warn("Data %s not found" % data_name)
+                return_data = None
+            else:
+                ids = [line[0] for line in
+                       cursor.execute("SELECT id FROM meta_info WHERE name=?", (data_name,)).fetchall()]
 
-        ids = [line[0] for line in cursor.execute("SELECT id FROM meta_info WHERE name=?", (data_name,)).fetchall()]
-        cursor.close()
-        conn.close()
-
-        if len(ids) > 1:
-            data_list = []
-            for id in ids:
-                data_list.append(self.load_data_by_id(id))
-            return tuple(data_list)
-        return self.load_data_by_id(ids[0])
+                if len(ids) > 1:
+                    data_list = []
+                    for id in ids:
+                        data_list.append(self.load_data_by_id(id))
+                    return_data = tuple(data_list)
+                else:
+                    return_data = self.load_data_by_id(ids[0])
+        except Exception as e:
+            print(e)
+            return_data = None
+        finally:
+            self._commit_release(conn, cursor)
+        return return_data
 
     def load_data_by_id(self, data_id):
         """
@@ -134,11 +156,30 @@ class ResultManager(object):
         :return: Saved data
         """
         conn, cursor = self._get_conn_cursor()
-        data = pickle.loads(cursor.execute("SELECT DATAFIELD FROM DATA WHERE ID=?", (data_id,)).fetchone()[0])
+        try:
+            ids = [line[0] for line in cursor.execute("SELECT id FROM meta_info").fetchall()]
+            if data_id not in ids:
+                warnings.warn("Data ID %d not found" % data_id)
+                data = None
+            else:
+                data = pickle.loads(cursor.execute("SELECT DATAFIELD FROM DATA WHERE ID=?", (data_id,)).fetchone()[0])
+        except Exception as e:
+            print(e)
+            data = None
+        finally:
+            self._commit_release(conn, cursor)
         return data
 
     def delete_data_by_id(self, data_id):
         conn, cursor = self._get_conn_cursor()
-        cursor.execute("DELETE FROM META_INFO WHERE ID=?", (data_id,))
-        cursor.execute("DELETE FROM DATA WHERE ID=?", (data_id,))
-        self._commit_release(conn, cursor)
+        try:
+            cursor.execute("DELETE FROM META_INFO WHERE ID=?", (data_id,))
+            cursor.execute("DELETE FROM DATA WHERE ID=?", (data_id,))
+        except Exception as e:
+            print(e)
+        finally:
+            self._commit_release(conn, cursor, commit=True)
+
+
+if __name__ == '__main__':
+    rm = ResultManager('data')

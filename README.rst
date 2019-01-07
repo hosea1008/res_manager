@@ -72,8 +72,8 @@ Note
 
 
 Key release notes
-------------
+-----------------
 
 * ``1.0.3`` Save data to pickle files, initial version.
 * ``2.0.0`` Introduce SQLite to save and manage data.
-* ``2.1.0`` Securely closing SQLite connections under any circumstances.
+* ``2.1.1`` Securely closing SQLite connections under any circumstances.

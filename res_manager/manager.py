@@ -4,6 +4,7 @@ import warnings
 import os
 import datetime
 import hashlib
+import sqlite3
 
 from prettytable import PrettyTable
 

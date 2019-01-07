@@ -198,5 +198,3 @@ class ResultManager(object):
         else:
             warnings.warn("At least one of ID or Name should be provided")
             return None
-
-rm = ResultManager('data')

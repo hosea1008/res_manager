@@ -19,7 +19,7 @@ Install ResultManager with ``pip install res-manager``
     >>> rm = ResultManager('data')
     >>> rm.save([1, 2, 3], topic='test saving', name='data1', commit_comment='Test saving a list')
     >>> rm.save(65535, topic='test saving', commit_comment='Test saving a number without a name')
-    >>> rm.save(rm, topic='topic 2', name="object of \"ResultManager\"" commit_comment='Test saving an object')
+    >>> rm.save(rm, topic='topic 2', name="object of \"ResultManager\"" commit_comment='Saving an object')
     >>> rm.save({0:1,1:'string'}, name="hongshan's dict without topic")
     >>> rm.print_meta_info()
     ...
@@ -37,7 +37,7 @@ ResultManager
 
 This project mainly provides:
 
-* A class named ``ResultManager`` that provides functions to save, load, clear and preview data.
+* A class named ``ResultManager`` that provides all functions.
 * ``ResultManager.save``: Save your data.
 * ``ResultManager.load``: Loading data by name or ID.
 * ``ResultManager.print_meta_info``: Print all meta info of saved data, including name, path, topic, comments etc.

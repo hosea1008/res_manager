@@ -144,7 +144,7 @@ class ResultManager(object):
             for line in lines:
                 print("ID: %d\t\tName: %s" % (line[0], line[1]))
 
-    def load_by_name(self, data_name):
+    def _load_by_name(self, data_name):
         """
         Load data by name, Assertion happens when given a wrong name, and if there are 2 data of the same name, a warning would appear.
         :param data_name: str, name of the saved data
@@ -162,14 +162,14 @@ class ResultManager(object):
                 if len(ids) > 1:
                     data_list = []
                     for id in ids:
-                        data_list.append(self.load_by_id(id))
+                        data_list.append(self._load_by_id(id))
                     return_data = tuple(data_list)
                     warnings.warn("Found more than one instance of \"%s\"" % data_name)
                 else:
-                    return_data = self.load_by_id(ids[0])
+                    return_data = self._load_by_id(ids[0])
         return return_data
 
-    def load_by_id(self, data_id):
+    def _load_by_id(self, data_id):
         """
         Load data by ID
         :param data_id: int, Data id, can be found by printing the meta info.
@@ -192,9 +192,11 @@ class ResultManager(object):
         :return:
         """
         if id:
-            return self.load_by_id(id)
+            return self._load_by_id(id)
         elif name:
-            return self.load_by_name(name)
+            return self._load_by_name(name)
         else:
             warnings.warn("At least one of ID or Name should be provided")
             return None
+
+rm = ResultManager('data')

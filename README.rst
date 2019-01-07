@@ -25,12 +25,10 @@ Install ResultManager with ``pip install res-manager``
     ...
     >>> rm.load(3)
     <res_manager.manager.ResultManager object at 0x7f29c8587470>
-    >>> rm.load(name='data1')
+    >>> rm.load(3, version='first')
     [1, 2, 3]
-    >>> rm.load(name="hongshan's dict without topic")
-    {0: 1, 1: 'string'}
-    >>> rm.delete_by_id(3)
-    >>> rm.update_meta(5, comment="haha")
+    >>> rm.delete_by_id(3, version='latest')
+    >>> rm.update_meta(5, name='b', topic='topic 5')
 
 ResultManager
 =============
@@ -39,11 +37,12 @@ This project mainly provides:
 
 * A class named ``ResultManager`` that provides all functions.
 * ``ResultManager.save``: Save your data.
-* ``ResultManager.load``: Loading data by name or ID.
+* ``ResultManager.load``: Loading data by ID.
 * ``ResultManager.print_meta_info``: Print all meta info of saved data, including name, path, topic, comments etc.
 * ``ResultManager.delete_by_id``: Delete data from yor storage.
 * ``ResultManager.update_meta``: Update meta information.
 * ``ResultManager.print_names`` and ``ResultManager.print_comments``： Print names and comments.
+* ``ResultManager.print_data_info``: Print details of the requested data.
 
 Future Plan
 ===========
@@ -77,3 +76,4 @@ Key release notes
 * ``2.0.0`` Introduce SQLite to save and manage data.
 * ``2.1.0`` Securely closing SQLite connections under any circumstances.
 * ``2.2.0`` Add support to quotation marks, add ``update_meta`` interface, simplifier some interfaces.
+* ``3.0.0`` Add version control to manage data at different versions with the same name.

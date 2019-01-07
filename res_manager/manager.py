@@ -42,17 +42,19 @@ class ResultManager(object):
         with self._ConnCursor(self.db_path) as [conn, cursor]:
             cursor.execute(
                 "CREATE TABLE META_INFO(ID INTEGER PRIMARY KEY AUTOINCREMENT, "
-                                        "NAME NVARCHAR(200), "
-                                        "TOPIC NVARCHAR(200), "
-                                        "DATATYPE VARCHAR(50), "
-                                        "INFO NVARCHAR(1000), "
-                                        "[SAVETIME] TIMESTAMP)")
+                "DATAID INTEGER, "
+                "NAME NVARCHAR(200), "
+                "TOPIC NVARCHAR(200), "
+                "VERSION INTEGER ,"
+                "DATATYPE VARCHAR(50), "
+                "INFO NVARCHAR(1000), "
+                "[SAVETIME] TIMESTAMP)")
 
             cursor.execute("CREATE TABLE DATA(ID INTEGER PRIMARY KEY AUTOINCREMENT,"
-                                            " DATAFIELD BLOB)")
+                           " DATAFIELD BLOB)")
             conn.commit()
 
-    def save(self, data, topic='', name='', comment=''):
+    def save(self, data, name='', topic='', comment=''):
         """
         Save data
         :param data: data to be saved
@@ -70,42 +72,81 @@ class ResultManager(object):
 
         pdata = pickle.dumps(data, pickle.HIGHEST_PROTOCOL)
         with self._ConnCursor(self.db_path) as [conn, cursor]:
-            cursor.execute(
-                "INSERT INTO META_INFO (NAME, TOPIC, DATATYPE, INFO, SAVETIME) VALUES (?, ?, ?, ?, ?)",
-                (name, topic, data_type_str, comment, curr_time_str))
+
+            data_ids = cursor.execute("SELECT DATAID FROM META_INFO").fetchall()
+            curr_max_dataid = max([line[0] for line in data_ids]) if data_ids != [] else 0
+            all_topic_names = cursor.execute("SELECT TOPIC, NAME FROM META_INFO").fetchall()
+
+            if (topic, name) in all_topic_names:
+                data_id = \
+                cursor.execute("SELECT DATAID FROM META_INFO WHERE TOPIC=? AND NAME=?", (topic, name)).fetchone()[0]
+                curr_max_version = max(
+                    [line[0] for line in cursor.execute("SELECT VERSION FROM META_INFO WHERE DATAID=?", (data_id,))])
+                cursor.execute(
+                    "INSERT INTO META_INFO (DATAID, NAME, TOPIC, DATATYPE, VERSION, INFO, SAVETIME) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                    (data_id, name, topic, data_type_str, curr_max_version + 1, comment, curr_time_str))
+            else:
+                cursor.execute(
+                    "INSERT INTO META_INFO (DATAID, NAME, TOPIC, DATATYPE, VERSION, INFO, SAVETIME) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                    (curr_max_dataid + 1, name, topic, data_type_str, 1, comment, curr_time_str))
 
             cursor.execute("INSERT INTO DATA (DATAFIELD) VALUES (?)", (sqlite3.Binary(pdata),))
 
             conn.commit()
 
-    def delete_by_id(self, data_id):
+    def delete_by_id(self, data_id, version='latest'):
         """
         Delete data by ID
         :param data_id: int, Data id, can be found by printing the meat info
+        :param version: 'latest', 'first' or version number
         :return:
         """
         with self._ConnCursor(self.db_path) as [conn, cursor]:
-            cursor.execute("DELETE FROM META_INFO WHERE ID=?", (data_id,))
-            cursor.execute("DELETE FROM DATA WHERE ID=?", (data_id,))
+            if not cursor.execute("SELECT VERSION FROM META_INFO WHERE DATAID=?", (data_id,)).fetchall():
+                warnings.warn("Data %s not exists" % data_id)
+                return
+            else:
+                if version == 'latest':
+                    curr_max_version = max(
+                        [line[0] for line in
+                         cursor.execute("SELECT VERSION FROM META_INFO WHERE DATAID=?", (data_id,))])
+                    uid = cursor.execute("SELECT ID FROM META_INFO WHERE DATAID=? AND VERSION=?",
+                                         (data_id, curr_max_version)).fetchone()[0]
+                elif version == 'first':
+                    curr_max_version = min(
+                        [line[0] for line in
+                         cursor.execute("SELECT VERSION FROM META_INFO WHERE DATAID=?", (data_id,))])
+                    uid = cursor.execute("SELECT ID FROM META_INFO WHERE DATAID=? AND VERSION=?",
+                                         (data_id, curr_max_version)).fetchone()[0]
+                else:
+                    uid_res = cursor.execute("SELECT ID FROM META_INFO WHERE DATAID=? AND VERSION=?",
+                                         (data_id, version)).fetchone()
+                    if uid_res is None:
+                        warnings.warn("Version %s not exists for data %s" % (version, data_id))
+                        return
+
+                    uid = uid_res[0]
+
+                cursor.execute("DELETE FROM META_INFO WHERE ID=?", (uid,))
+                cursor.execute("DELETE FROM DATA WHERE ID=?", (uid,))
             conn.commit()
 
-    def update_meta(self, id, name=None, topic=None, comment=None):
+    def update_meta(self, data_id, name=None, topic=None):
         """
         Update meta info by ID
-        :param id: Data ID
+        :param data_id: Data ID
         :param name: Data name
         :param topic: Data topic
-        :param comment: Data comment
         :return:
         """
 
-        for string, field_name in zip([topic, name, comment], ['topic', 'name', 'comment']):
+        for string, field_name in zip([topic, name], ['topic', 'name']):
             assert string.find("''") < 0, "Illegal string \"''\" found in %s" % field_name
 
         with self._ConnCursor(self.db_path) as [conn, cursor]:
-            for field_name, value in zip(["NAME", "TOPIC", "INFO"], [name, topic, comment]):
+            for field_name, value in zip(["NAME", "TOPIC"], [name, topic]):
                 if value is not None:
-                    cursor.execute("UPDATE META_INFO SET %s=? WHERE ID=?" % field_name, (value, id,))
+                    cursor.execute("UPDATE META_INFO SET %s=? WHERE DATAID=?" % field_name, (value, data_id,))
             conn.commit()
 
     # THE FOLLOWING FUNCTIONS EXIT WITHOUT COMMIT TO SQLITE (READ ONLY)
@@ -116,13 +157,35 @@ class ResultManager(object):
         :return:
         """
         table = PrettyTable()
-        table.field_names = ["ID", "Name", "Topic", "Type", "Commit comments", "Save time"]
+        table.field_names = ["Data ID", "Name", "Topic", "Type", "Versions"]
 
         with self._ConnCursor(self.db_path) as [_, cursor]:
-            meta_infos = cursor.execute("SELECT * FROM META_INFO").fetchall()
+            data_ids = set([line[0] for line in cursor.execute("SELECT DATAID FROM META_INFO").fetchall()])
+
+            for data_id in data_ids:
+                meta_infos = cursor.execute("SELECT DATAID, NAME, TOPIC, DATATYPE FROM META_INFO WHERE DATAID=?",
+                                            (data_id,)).fetchall()
+                version_counts = len(meta_infos)
+                line = list(meta_infos[0]) + [version_counts]
+                table.add_row(line)
+
+        print(table)
+
+    def print_data_info(self, data_id):
+        """
+        Print data info of requested data
+        :return:
+        """
+        table = PrettyTable()
+        table.field_names = ["Data ID", "Name", "Topic", "Type", "Version", "Comment"]
+
+        with self._ConnCursor(self.db_path) as [_, cursor]:
+            meta_infos = cursor.execute("SELECT DATAID, NAME, TOPIC, DATATYPE, VERSION, INFO FROM META_INFO WHERE DATAID=?",
+                                        (data_id,)).fetchall()
             for line in meta_infos:
                 table.add_row(line)
-            print(table)
+
+        print(table)
 
     def print_names(self):
         """
@@ -130,9 +193,9 @@ class ResultManager(object):
         :return:
         """
         with self._ConnCursor(self.db_path) as [_, cursor]:
-            lines = cursor.execute("SELECT ID, NAME FROM META_INFO").fetchall()
+            lines = set(cursor.execute("SELECT DATAID, NAME FROM META_INFO").fetchall())
             for line in lines:
-                print("ID: %d\t\tName: %s" % (line[0], line[1]))
+                print("Data ID: %d\t\tName: %s" % (line[0], line[1]))
 
     def print_comments(self):
         """
@@ -140,61 +203,42 @@ class ResultManager(object):
         :return:
         """
         with self._ConnCursor(self.db_path) as [_, cursor]:
-            lines = cursor.execute("SELECT ID, INFO FROM META_INFO").fetchall()
+            lines = set(cursor.execute("SELECT DATAID, VERSION, INFO FROM META_INFO").fetchall())
             for line in lines:
-                print("ID: %d\t\tComment: %s" % (line[0], line[1]))
+                print("Data ID: %d\tVersion: %d\tComment: %s" % (line[0], line[1], line[2]))
 
-    def _load_by_name(self, data_name):
-        """
-        Load data by name, Assertion happens when given a wrong name, and if there are 2 data of the same name, a warning would appear.
-        :param data_name: str, name of the saved data
-        :return: Saved data
-        """
-        with self._ConnCursor(self.db_path) as [_, cursor]:
-            names = [line[0] for line in cursor.execute("SELECT NAME FROM META_INFO").fetchall()]
-            if data_name not in names:
-                warnings.warn("Data %s not found" % data_name)
-                return_data = None
-            else:
-                ids = [line[0] for line in
-                       cursor.execute("SELECT id FROM meta_info WHERE name=?", (data_name,)).fetchall()]
-
-                if len(ids) > 1:
-                    data_list = []
-                    for id in ids:
-                        data_list.append(self._load_by_id(id))
-                    return_data = tuple(data_list)
-                    warnings.warn("Found more than one instance of \"%s\"" % data_name)
-                else:
-                    return_data = self._load_by_id(ids[0])
-        return return_data
-
-    def _load_by_id(self, data_id):
+    def load(self, data_id, version='latest'):
         """
         Load data by ID
+        :param version: 'latest', 'first' or version number
         :param data_id: int, Data id, can be found by printing the meta info.
         :return: Saved data
         """
-        with self._ConnCursor(self.db_path) as [_, cursor]:
-            ids = [line[0] for line in cursor.execute("SELECT id FROM meta_info").fetchall()]
-            if data_id not in ids:
-                warnings.warn("Data ID %d not found" % data_id)
-                data = None
+        with self._ConnCursor(self.db_path) as [conn, cursor]:
+            if not cursor.execute("SELECT VERSION FROM META_INFO WHERE DATAID=?", (data_id,)).fetchall():
+                warnings.warn("Data %s not exists" % data_id)
+                return
             else:
-                data = pickle.loads(cursor.execute("SELECT DATAFIELD FROM DATA WHERE ID=?", (data_id,)).fetchone()[0])
-        return data
+                if version == 'latest':
+                    curr_max_version = max(
+                        [line[0] for line in
+                         cursor.execute("SELECT VERSION FROM META_INFO WHERE DATAID=?", (data_id,))])
+                    uid = cursor.execute("SELECT ID FROM META_INFO WHERE DATAID=? AND VERSION=?",
+                                         (data_id, curr_max_version)).fetchone()[0]
+                elif version == 'first':
+                    curr_max_version = min(
+                        [line[0] for line in
+                         cursor.execute("SELECT VERSION FROM META_INFO WHERE DATAID=?", (data_id,))])
+                    uid = cursor.execute("SELECT ID FROM META_INFO WHERE DATAID=? AND VERSION=?",
+                                         (data_id, curr_max_version)).fetchone()[0]
+                else:
+                    uid_res = cursor.execute("SELECT ID FROM META_INFO WHERE DATAID=? AND VERSION=?",
+                                         (data_id, version)).fetchone()
+                    if uid_res is None:
+                        warnings.warn("Version %s not exists for data %s" % (version, data_id))
+                        return
 
-    def load(self, id=None, name=None):
-        """
-        Load data by ID or Name, load by ID by default
-        :param id: Data ID
-        :param name: Data Name
-        :return:
-        """
-        if id:
-            return self._load_by_id(id)
-        elif name:
-            return self._load_by_name(name)
-        else:
-            warnings.warn("At least one of ID or Name should be provided")
-            return None
+                    uid = uid_res[0]
+
+            data = pickle.loads(cursor.execute("SELECT DATAFIELD FROM DATA WHERE ID=?", (uid,)).fetchone()[0])
+        return data

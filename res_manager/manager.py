@@ -155,7 +155,3 @@ class ResultManager(object):
             else:
                 data = pickle.loads(cursor.execute("SELECT DATAFIELD FROM DATA WHERE ID=?", (data_id,)).fetchone()[0])
         return data
-
-
-if __name__ == '__main__':
-    rm = ResultManager('data')

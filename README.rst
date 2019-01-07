@@ -17,20 +17,20 @@ Install ResultManager with ``pip install res-manager``
 
     >>> from res_manager import ResultManager
     >>> rm = ResultManager('data')
-    >>> rm.save_data([1, 2, 3], topic='test saving', name='data1', commit_comment='Test saving a list')
-    >>> rm.save_data(65535, topic='test saving', commit_comment='Test saving a number without a name')
-    >>> rm.save_data(rm, topic='topic 2', name="object of \"ResultManager\"" commit_comment='Test saving an object')
-    >>> rm.save_data({0:1,1:'string'}, name="hongshan's dict without topic")
+    >>> rm.save([1, 2, 3], topic='test saving', name='data1', commit_comment='Test saving a list')
+    >>> rm.save(65535, topic='test saving', commit_comment='Test saving a number without a name')
+    >>> rm.save(rm, topic='topic 2', name="object of \"ResultManager\"" commit_comment='Test saving an object')
+    >>> rm.save({0:1,1:'string'}, name="hongshan's dict without topic")
     >>> rm.print_meta_info()
     ...
-    >>> rm.load_data_by_id(3)
+    >>> rm.load(3)
     <res_manager.manager.ResultManager object at 0x7f29c8587470>
-    >>> rm.load_data_by_name('data1')
+    >>> rm.load(name='data1')
     [1, 2, 3]
-    >>> rm.load_data_by_name('dict_without_topic')
+    >>> rm.load(name="hongshan's dict without topic")
     {0: 1, 1: 'string'}
-    >>> rm.delete_data_by_id(3)
-    >>> rm.update_meta(5,comment="haha")
+    >>> rm.delete_by_id(3)
+    >>> rm.update_meta(5, comment="haha")
 
 ResultManager
 =============
@@ -38,10 +38,12 @@ ResultManager
 This project mainly provides:
 
 * A class named ``ResultManager`` that provides functions to save, load, clear and preview data.
-* ``ResultManager.save_data``: Save your data.
-* ``ResultManager.load_data_by_name`` and ``ResultManager.load_data_by_id``: Loading data by name or ID.
-* ``ResultManager.print_meta_info`` Print all meta info of saved data, including name, path, topic, comments etc.
-* ``ResultManager.delete_data_by_id`` Delete data from yor storage.
+* ``ResultManager.save``: Save your data.
+* ``ResultManager.load``: Loading data by name or ID.
+* ``ResultManager.print_meta_info``: Print all meta info of saved data, including name, path, topic, comments etc.
+* ``ResultManager.delete_by_id``: Delete data from yor storage.
+* ``ResultManager.update_meta``: Update meta information.
+* ``ResultManager.print_names`` and ``ResultManager.print_comments``： Print names and comments.
 
 Future Plan
 ===========
@@ -56,10 +58,6 @@ Authors
 
 .. _`Hongshan Li`: https://www.hsli.top
 
-Documentation
-=============
-
-This project is still simple, therefore no docs...
 
 Requirements
 ------------
@@ -78,4 +76,4 @@ Key release notes
 * ``1.0.3`` Save data to pickle files, initial version.
 * ``2.0.0`` Introduce SQLite to save and manage data.
 * ``2.1.0`` Securely closing SQLite connections under any circumstances.
-* ``2.2.0`` Add support to quotation marks, add ``update_meta`` interface.
+* ``2.2.0`` Add support to quotation marks, add ``update_meta`` interface, simplifier some interfaces.

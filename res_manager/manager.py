@@ -1,6 +1,5 @@
 from __future__ import print_function, unicode_literals
 
-import tensorflow as tf
 import datetime
 import os
 import pickle

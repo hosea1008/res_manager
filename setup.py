@@ -1,16 +1,10 @@
 #!/usr/bin/env python
 # coding=utf-8
-
-from setuptools import setup, find_packages
-
-#!/usr/bin/env python
-# coding=utf-8
-
 from setuptools import setup, find_packages
 
 setup(
     name='res_manager',
-    version='3.0.0',
+    version='3.0.1',
     description=(
         'This tool helps you to manage your experimental results in a more elegant way, saving your experiment data by pickle with some high-level interfaces to save, load and preview.'
     ),
@@ -24,10 +18,10 @@ setup(
     platforms=["all"],
     url='https://github.com/hosea1008/res_manager',
     classifiers=[
-        'Development Status :: 4 - Beta',
+        'DEVELOPMENT STATUS :: 5 - PRODUCTION/STABLE',
         'Operating System :: OS Independent',
         'Intended Audience :: Developers',
-        'License :: OSI Approved :: BSD License',
+        'LICENSE :: OSI APPROVED :: GNU GENERAL PUBLIC LICENSE V3 (GPLV3)',
         'Programming Language :: Python',
         'Programming Language :: Python :: Implementation',
         'Programming Language :: Python :: 2',

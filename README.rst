@@ -2,6 +2,11 @@
 Experimental Results Manager
 ============================
 
+.. image:: https://img.shields.io/pypi/pyversions/res-manager.svg
+.. image:: https://img.shields.io/github/license/hosea1008/res_manager.svg
+.. image:: https://img.shields.io/github/last-commit/hosea1008/res_manager.svg
+.. image:: https://img.shields.io/pypi/status/res-manager.svg
+
 This project helps you to handle your experimental results efficiently when doing your research. Basically it uses ``pickle`` and ``sqlite3`` to save, load and manage the data, now we provide you with some high-level interfaces so that you can get rid of pickle dumping and loading from disk all the time.
 
 Since it is based on ``pickle``, in theory you can use it to manage all types of data in python, you can even save an object as shown in the following examples.

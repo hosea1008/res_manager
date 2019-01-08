@@ -1,15 +1,22 @@
-.. image:: https://img.shields.io/pypi/pyversions/res-manager.svg
-
-.. image:: https://img.shields.io/github/license/hosea1008/res_manager.svg
-
-.. image:: https://img.shields.io/github/last-commit/hosea1008/res_manager.svg
-
-.. image:: https://img.shields.io/pypi/status/res-manager.svg
-
-
 ============================
 Experimental Results Manager
 ============================
+
+|PyPI| |Python versions| |License| |Last commit| |Status|
+
+.. |PyPI| image:: https://img.shields.io/pypi/v/res-manager.svg
+   :target: https://pypi.org/project/res-manager/
+
+.. |Python versions| image:: https://img.shields.io/pypi/pyversions/res-manager.svg
+
+.. |License| image:: https://img.shields.io/github/license/hosea1008/res_manager.svg
+   :target: https://github.com/hosea1008/res_manager/blob/master/LICENSE
+
+.. |Last commit| image:: https://img.shields.io/github/last-commit/hosea1008/res_manager.svg
+
+.. |Status| image:: https://img.shields.io/pypi/status/res-manager.svg
+
+
 
 This project helps you to handle your experimental results efficiently when doing your research. Basically it uses ``pickle`` and ``sqlite3`` to save, load and manage the data, now we provide you with some high-level interfaces so that you can get rid of pickle dumping and loading from disk all the time.
 
@@ -26,9 +33,9 @@ Install ResultManager with ``pip install res-manager``
 
     >>> from res_manager import ResultManager
     >>> rm = ResultManager('data')
-    >>> rm.save([1, 2, 3], topic='test saving', name='data1', commit_comment='Test saving a list')
-    >>> rm.save(65535, topic='test saving', commit_comment='Test saving a number without a name')
-    >>> rm.save(rm, topic='topic 2', name="object of \"ResultManager\"" commit_comment='Saving an object')
+    >>> rm.save([1, 2, 3], topic='test saving', name='data1', comment='Test saving a list')
+    >>> rm.save(65535, topic='test saving', comment='Test saving a number without a name')
+    >>> rm.save(rm, topic='topic 2', name="object of \"ResultManager\"", comment='Saving an object')
     >>> rm.save({0:1,1:'string'}, name="hongshan's dict without topic")
     >>> rm.print_meta_info()
     ...

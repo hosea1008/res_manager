@@ -2,8 +2,6 @@
 Experimental Results Manager
 ============================
 
-.. image:: https://img.shields.io/pypi/pyversions/res-manager.svg
-
 .. image:: https://img.shields.io/github/license/hosea1008/res_manager.svg
 
 .. image:: https://img.shields.io/github/last-commit/hosea1008/res_manager.svg

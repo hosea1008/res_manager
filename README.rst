@@ -2,12 +2,13 @@
 Experimental Results Manager
 ============================
 
-|PyPI| |Python versions| |License| |Last commit| |Status|
+|PyPI| |Travis build| |License| |Last commit| |Status|
 
 .. |PyPI| image:: https://img.shields.io/pypi/v/res-manager.svg
    :target: https://pypi.org/project/res-manager/
 
-.. |Python versions| image:: https://img.shields.io/pypi/pyversions/res-manager.svg
+.. |Travis build| image:: https://travis-ci.com/hosea1008/res_manager.svg?branch=master
+    :target: https://travis-ci.com/hosea1008/res_manager
 
 .. |License| image:: https://img.shields.io/github/license/hosea1008/res_manager.svg
    :target: https://github.com/hosea1008/res_manager/blob/master/LICENSE
@@ -38,13 +39,13 @@ Install ResultManager with ``pip install res-manager``
     >>> rm.save(rm, topic='topic 2', name="object of \"ResultManager\"", comment='Saving an object')
     >>> rm.save({0:1,1:'string'}, name="hongshan's dict without topic")
     >>> rm.print_meta_info()
-    ...
+        ...
     >>> rm.load(3)
-    <res_manager.manager.ResultManager object at 0x7f29c8587470>
+        <res_manager.manager.ResultManager object at 0x7f29c8587470>
     >>> rm.load(3, version='first')
-    [1, 2, 3]
+        [1, 2, 3]
     >>> rm.delete_by_id(3, version='latest')
-    >>> rm.update_meta(5, name='b', topic='topic 5')
+    >>> rm.update_meta(1, name='b', topic='topic 5')
 
 ResultManager
 =============

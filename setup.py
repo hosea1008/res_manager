@@ -6,22 +6,22 @@ setup(
     name='res_manager',
     version='3.0.1',
     description=(
-        'This tool helps you to manage your experimental results in a more elegant way, saving your experiment data by pickle with some high-level interfaces to save, load and preview.'
+        'res-manager helps you to manage your experimental results data in a more convenient way.'
     ),
     long_description=open('README.rst').read(),
     author='Hongshan Li',
     author_email='lhs17@mails.tsinghua.edu.cn',
     maintainer='',
     maintainer_email='',
-    license='GPL License',
+    license='GPLv3',
     packages=find_packages(),
     platforms=["all"],
     url='https://github.com/hosea1008/res_manager',
     classifiers=[
-        'DEVELOPMENT STATUS :: 5 - PRODUCTION/STABLE',
+        'Development Status :: 5 - Production/Stable',
         'Operating System :: OS Independent',
         'Intended Audience :: Developers',
-        'LICENSE :: OSI APPROVED :: GNU GENERAL PUBLIC LICENSE V3 (GPLV3)',
+        'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
         'Programming Language :: Python',
         'Programming Language :: Python :: Implementation',
         'Programming Language :: Python :: 2',
@@ -30,7 +30,8 @@ setup(
         'Programming Language :: Python :: 3.4',
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
-        'Topic :: Utilities'
+        'Topic :: Utilities',
+        "Topic :: Software Development :: Libraries :: Python Modules"
     ],
     install_requires=['prettytable>=0.7.2']
 )

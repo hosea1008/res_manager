@@ -105,7 +105,7 @@ class ResultManager(object):
                 self.delete_by_id(data_id, version=replace_version)
                 cursor.execute(
                     "INSERT INTO META_INFO (DATAID, NAME, TOPIC, DATATYPE, VERSION, INFO, SAVETIME) VALUES (?, ?, ?, ?, ?, ?, ?)",
-                    (curr_max_dataid + 1, name, topic, data_type_str, 1, comment, curr_time_str))
+                    (data_id, name, topic, data_type_str, 1, comment, curr_time_str))
 
             elif len(all_topic_names) == 1 and replace_version is None:     # one version, don't need to replace
                 data_id = cursor.execute("SELECT DATAID FROM META_INFO WHERE TOPIC=? AND NAME=?", (topic, name)).fetchone()[0]

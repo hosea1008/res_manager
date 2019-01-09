@@ -21,7 +21,9 @@ def test_all():
     rm.print_meta_info()
     print(rm.load(5, version='first'))
     print(rm.load(5))
+    rm.print_meta_info(topic='topic 5')
+    return rm
 
 
 if __name__ == '__main__':
-    test_all()
+    rm = test_all()

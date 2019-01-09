@@ -183,16 +183,23 @@ class ResultManager(object):
 
     # THE FOLLOWING FUNCTIONS EXIT WITHOUT COMMIT TO SQLITE (READ ONLY)
 
-    def print_meta_info(self):
+    def print_meta_info(self, topic=None):
         """
         Print all meta info of saved data
+        :param topic: print only meta info for specific topic if given.
         :return:
         """
         table = PrettyTable()
         table.field_names = ["Data ID", "Name", "Topic", "Type", "Versions"]
 
         with self._ConnCursor(self.db_path) as [_, cursor]:
-            data_ids = set([line[0] for line in cursor.execute("SELECT DATAID FROM META_INFO").fetchall()])
+            if topic is not None:
+                data_ids = set([line[0] for line in cursor.execute("SELECT DATAID FROM META_INFO WHERE TOPIC=?", (topic,)).fetchall()])
+                if data_ids == set():
+                    warnings.warn("Topic \"%s\" not exists" % topic)
+                    return
+            else:
+                data_ids = set([line[0] for line in cursor.execute("SELECT DATAID FROM META_INFO").fetchall()])
 
             for data_id in data_ids:
                 meta_infos = cursor.execute("SELECT DATAID, NAME, TOPIC, DATATYPE FROM META_INFO WHERE DATAID=?",

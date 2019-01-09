@@ -1,7 +1,10 @@
 from res_manager import ResultManager
+import os
 
 
 def test_all():
+    if os.path.exists('./data.db'):
+        os.remove('./data.db')
     rm = ResultManager('.')
     rm.save([1, 2, 3], topic='test saving', name='data1', comment='Test saving a list')
     rm.save(65535, topic='test saving', comment='Test saving a number without a name')
@@ -12,3 +15,12 @@ def test_all():
     rm.load(3, version='first')
     rm.delete_by_id(3, version='latest')
     rm.update_meta(1, name='b', topic='topic 5')
+    rm.save(12, name='b', topic='topic 5', replace_version='latest')
+    rm.save(13, name='b', topic='topic 5')
+    rm.print_meta_info()
+    print(rm.load(5, version='first'))
+    print(rm.load(5))
+
+
+if __name__ == '__main__':
+    test_all()

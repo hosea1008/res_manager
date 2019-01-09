@@ -4,7 +4,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='res_manager',
-    version='3.0.1',
+    version='3.0.2',
     description=(
         'res-manager helps you to manage your experimental results data in a more convenient way.'
     ),

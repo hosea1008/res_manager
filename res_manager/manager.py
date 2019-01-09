@@ -54,9 +54,11 @@ class ResultManager(object):
                            " DATAFIELD BLOB)")
             conn.commit()
 
-    def save(self, data, name='', topic='', comment=''):
+    def save(self, data, name='', topic='', comment='', replace_version=None):
         """
         Save data
+        :param replace_version: Version number or 'latest', 'first' if you want to replace. Pls note that
+        the name and topic should be the same as the version to be replaced, otherwise it will save a new one
         :param data: data to be saved
         :param topic: topic of the current data, a higher level than name, helps you to manager data of different topic
         :param name: name of the data, can be empty
@@ -75,22 +77,50 @@ class ResultManager(object):
 
             data_ids = cursor.execute("SELECT DATAID FROM META_INFO").fetchall()
             curr_max_dataid = max([line[0] for line in data_ids]) if data_ids != [] else 0
-            all_topic_names = cursor.execute("SELECT TOPIC, NAME FROM META_INFO").fetchall()
+            all_topic_names = set(cursor.execute("SELECT TOPIC, NAME, VERSION FROM META_INFO WHERE TOPIC=? AND NAME=?", (topic, name,)).fetchall())
 
-            if (topic, name) in all_topic_names:
+            # +------------+-----------+-----------------------+-------------------------------+
+            # |            | 0 version | 1 version             | > 2 version                   |
+            # +------------+-----------+-----------------------+-------------------------------+
+            # | replace    | insert    | delete, insert        | delete, check version, insert |
+            # +------------+-----------+-----------------------+-------------------------------+
+            # | no replace | insert    | check version, insert | check version, insert         |
+            # +------------+-----------+-----------------------+-------------------------------+
+
+            if len(all_topic_names) > 1:    # multi versions of the same topic and name exist
                 data_id = \
                 cursor.execute("SELECT DATAID FROM META_INFO WHERE TOPIC=? AND NAME=?", (topic, name)).fetchone()[0]
+
+                if replace_version is not None:
+                    self.delete_by_id(data_id, version=replace_version)
+
                 curr_max_version = max(
                     [line[0] for line in cursor.execute("SELECT VERSION FROM META_INFO WHERE DATAID=?", (data_id,))])
                 cursor.execute(
                     "INSERT INTO META_INFO (DATAID, NAME, TOPIC, DATATYPE, VERSION, INFO, SAVETIME) VALUES (?, ?, ?, ?, ?, ?, ?)",
                     (data_id, name, topic, data_type_str, curr_max_version + 1, comment, curr_time_str))
-            else:
+
+            elif len(all_topic_names) == 1 and replace_version:     # one version, need to replace
+                data_id = cursor.execute("SELECT DATAID FROM META_INFO WHERE TOPIC=? AND NAME=?", (topic, name)).fetchone()[0]
+                self.delete_by_id(data_id, version=replace_version)
                 cursor.execute(
                     "INSERT INTO META_INFO (DATAID, NAME, TOPIC, DATATYPE, VERSION, INFO, SAVETIME) VALUES (?, ?, ?, ?, ?, ?, ?)",
                     (curr_max_dataid + 1, name, topic, data_type_str, 1, comment, curr_time_str))
 
-            cursor.execute("INSERT INTO DATA (DATAFIELD) VALUES (?)", (sqlite3.Binary(pdata),))
+            elif len(all_topic_names) == 1 and replace_version is None:     # one version, don't need to replace
+                data_id = cursor.execute("SELECT DATAID FROM META_INFO WHERE TOPIC=? AND NAME=?", (topic, name)).fetchone()[0]
+                curr_max_version = max(
+                    [line[0] for line in cursor.execute("SELECT VERSION FROM META_INFO WHERE DATAID=?", (data_id,))])
+                cursor.execute(
+                    "INSERT INTO META_INFO (DATAID, NAME, TOPIC, DATATYPE, VERSION, INFO, SAVETIME) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                    (data_id, name, topic, data_type_str, curr_max_version + 1, comment, curr_time_str))
+
+            else:   # no version exists
+                cursor.execute(
+                    "INSERT INTO META_INFO (DATAID, NAME, TOPIC, DATATYPE, VERSION, INFO, SAVETIME) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                    (curr_max_dataid + 1, name, topic, data_type_str, 1, comment, curr_time_str))
+
+            cursor.execute("INSERT INTO DATA (DATAFIELD) VALUES (?)", (sqlite3.Binary(pdata),)) # save data
 
             conn.commit()
 
@@ -101,6 +131,8 @@ class ResultManager(object):
         :param version: 'latest', 'first' or version number
         :return:
         """
+        assert version in ['latest', 'first'] or isinstance(version, int), "version should be 'latest', 'first' or int version number"
+
         with self._ConnCursor(self.db_path) as [conn, cursor]:
             if not cursor.execute("SELECT VERSION FROM META_INFO WHERE DATAID=?", (data_id,)).fetchall():
                 warnings.warn("Data %s not exists" % data_id)

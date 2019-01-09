@@ -54,6 +54,37 @@ class ResultManager(object):
                            " DATAFIELD BLOB)")
             conn.commit()
 
+    def _delete_by_id_nocommit(self, data_id, version, cursor):
+        assert version in ['latest', 'first'] or isinstance(version, int), "version should be 'latest', 'first' or int version number"
+
+        if not cursor.execute("SELECT VERSION FROM META_INFO WHERE DATAID=?", (data_id,)).fetchall():
+            warnings.warn("Data %s not exists" % data_id)
+            return
+        else:
+            if version == 'latest':
+                curr_max_version = max(
+                    [line[0] for line in
+                     cursor.execute("SELECT VERSION FROM META_INFO WHERE DATAID=?", (data_id,))])
+                uid = cursor.execute("SELECT ID FROM META_INFO WHERE DATAID=? AND VERSION=?",
+                                     (data_id, curr_max_version)).fetchone()[0]
+            elif version == 'first':
+                curr_max_version = min(
+                    [line[0] for line in
+                     cursor.execute("SELECT VERSION FROM META_INFO WHERE DATAID=?", (data_id,))])
+                uid = cursor.execute("SELECT ID FROM META_INFO WHERE DATAID=? AND VERSION=?",
+                                     (data_id, curr_max_version)).fetchone()[0]
+            else:
+                uid_res = cursor.execute("SELECT ID FROM META_INFO WHERE DATAID=? AND VERSION=?",
+                                         (data_id, version)).fetchone()
+                if uid_res is None:
+                    warnings.warn("Version %s not exists for data %s" % (version, data_id))
+                    return
+
+                uid = uid_res[0]
+
+            cursor.execute("DELETE FROM META_INFO WHERE ID=?", (uid,))
+            cursor.execute("DELETE FROM DATA WHERE ID=?", (uid,))
+
     def save(self, data, name='', topic='', comment='', replace_version=None):
         """
         Save data
@@ -77,7 +108,8 @@ class ResultManager(object):
 
             data_ids = cursor.execute("SELECT DATAID FROM META_INFO").fetchall()
             curr_max_dataid = max([line[0] for line in data_ids]) if data_ids != [] else 0
-            all_topic_names = set(cursor.execute("SELECT TOPIC, NAME, VERSION FROM META_INFO WHERE TOPIC=? AND NAME=?", (topic, name,)).fetchall())
+            all_topic_names = set(cursor.execute("SELECT TOPIC, NAME, VERSION FROM META_INFO WHERE TOPIC=? AND NAME=?",
+                                                 (topic, name,)).fetchall())
 
             # +------------+-----------+-----------------------+-------------------------------+
             # |            | 0 version | 1 version             | > 2 version                   |
@@ -87,12 +119,12 @@ class ResultManager(object):
             # | no replace | insert    | check version, insert | check version, insert         |
             # +------------+-----------+-----------------------+-------------------------------+
 
-            if len(all_topic_names) > 1:    # multi versions of the same topic and name exist
+            if len(all_topic_names) > 1:  # multi versions of the same topic and name exist
                 data_id = \
-                cursor.execute("SELECT DATAID FROM META_INFO WHERE TOPIC=? AND NAME=?", (topic, name)).fetchone()[0]
+                    cursor.execute("SELECT DATAID FROM META_INFO WHERE TOPIC=? AND NAME=?", (topic, name)).fetchone()[0]
 
                 if replace_version is not None:
-                    self.delete_by_id(data_id, version=replace_version)
+                    self._delete_by_id_nocommit(data_id, version=replace_version, cursor=cursor)
 
                 curr_max_version = max(
                     [line[0] for line in cursor.execute("SELECT VERSION FROM META_INFO WHERE DATAID=?", (data_id,))])
@@ -100,27 +132,29 @@ class ResultManager(object):
                     "INSERT INTO META_INFO (DATAID, NAME, TOPIC, DATATYPE, VERSION, INFO, SAVETIME) VALUES (?, ?, ?, ?, ?, ?, ?)",
                     (data_id, name, topic, data_type_str, curr_max_version + 1, comment, curr_time_str))
 
-            elif len(all_topic_names) == 1 and replace_version:     # one version, need to replace
-                data_id = cursor.execute("SELECT DATAID FROM META_INFO WHERE TOPIC=? AND NAME=?", (topic, name)).fetchone()[0]
-                self.delete_by_id(data_id, version=replace_version)
+            elif len(all_topic_names) == 1 and replace_version:  # one version, need to replace
+                data_id = \
+                cursor.execute("SELECT DATAID FROM META_INFO WHERE TOPIC=? AND NAME=?", (topic, name)).fetchone()[0]
+                self._delete_by_id_nocommit(data_id, version=replace_version, cursor=cursor)
                 cursor.execute(
                     "INSERT INTO META_INFO (DATAID, NAME, TOPIC, DATATYPE, VERSION, INFO, SAVETIME) VALUES (?, ?, ?, ?, ?, ?, ?)",
                     (data_id, name, topic, data_type_str, 1, comment, curr_time_str))
 
-            elif len(all_topic_names) == 1 and replace_version is None:     # one version, don't need to replace
-                data_id = cursor.execute("SELECT DATAID FROM META_INFO WHERE TOPIC=? AND NAME=?", (topic, name)).fetchone()[0]
+            elif len(all_topic_names) == 1 and replace_version is None:  # one version, don't need to replace
+                data_id = \
+                cursor.execute("SELECT DATAID FROM META_INFO WHERE TOPIC=? AND NAME=?", (topic, name)).fetchone()[0]
                 curr_max_version = max(
                     [line[0] for line in cursor.execute("SELECT VERSION FROM META_INFO WHERE DATAID=?", (data_id,))])
                 cursor.execute(
                     "INSERT INTO META_INFO (DATAID, NAME, TOPIC, DATATYPE, VERSION, INFO, SAVETIME) VALUES (?, ?, ?, ?, ?, ?, ?)",
                     (data_id, name, topic, data_type_str, curr_max_version + 1, comment, curr_time_str))
 
-            else:   # no version exists
+            else:  # no version exists
                 cursor.execute(
                     "INSERT INTO META_INFO (DATAID, NAME, TOPIC, DATATYPE, VERSION, INFO, SAVETIME) VALUES (?, ?, ?, ?, ?, ?, ?)",
                     (curr_max_dataid + 1, name, topic, data_type_str, 1, comment, curr_time_str))
 
-            cursor.execute("INSERT INTO DATA (DATAFIELD) VALUES (?)", (sqlite3.Binary(pdata),)) # save data
+            cursor.execute("INSERT INTO DATA (DATAFIELD) VALUES (?)", (sqlite3.Binary(pdata),))  # save data
 
             conn.commit()
 
@@ -131,37 +165,9 @@ class ResultManager(object):
         :param version: 'latest', 'first' or version number
         :return:
         """
-        assert version in ['latest', 'first'] or isinstance(version, int), "version should be 'latest', 'first' or int version number"
-
         with self._ConnCursor(self.db_path) as [conn, cursor]:
-            if not cursor.execute("SELECT VERSION FROM META_INFO WHERE DATAID=?", (data_id,)).fetchall():
-                warnings.warn("Data %s not exists" % data_id)
-                return
-            else:
-                if version == 'latest':
-                    curr_max_version = max(
-                        [line[0] for line in
-                         cursor.execute("SELECT VERSION FROM META_INFO WHERE DATAID=?", (data_id,))])
-                    uid = cursor.execute("SELECT ID FROM META_INFO WHERE DATAID=? AND VERSION=?",
-                                         (data_id, curr_max_version)).fetchone()[0]
-                elif version == 'first':
-                    curr_max_version = min(
-                        [line[0] for line in
-                         cursor.execute("SELECT VERSION FROM META_INFO WHERE DATAID=?", (data_id,))])
-                    uid = cursor.execute("SELECT ID FROM META_INFO WHERE DATAID=? AND VERSION=?",
-                                         (data_id, curr_max_version)).fetchone()[0]
-                else:
-                    uid_res = cursor.execute("SELECT ID FROM META_INFO WHERE DATAID=? AND VERSION=?",
-                                         (data_id, version)).fetchone()
-                    if uid_res is None:
-                        warnings.warn("Version %s not exists for data %s" % (version, data_id))
-                        return
-
-                    uid = uid_res[0]
-
-                cursor.execute("DELETE FROM META_INFO WHERE ID=?", (uid,))
-                cursor.execute("DELETE FROM DATA WHERE ID=?", (uid,))
-            conn.commit()
+            self._delete_by_id_nocommit(data_id, version, cursor)
+            conn.commit
 
     def update_meta(self, data_id, name=None, topic=None):
         """
@@ -194,7 +200,8 @@ class ResultManager(object):
 
         with self._ConnCursor(self.db_path) as [_, cursor]:
             if topic is not None:
-                data_ids = set([line[0] for line in cursor.execute("SELECT DATAID FROM META_INFO WHERE TOPIC=?", (topic,)).fetchall()])
+                data_ids = set([line[0] for line in
+                                cursor.execute("SELECT DATAID FROM META_INFO WHERE TOPIC=?", (topic,)).fetchall()])
                 if data_ids == set():
                     warnings.warn("Topic \"%s\" not exists" % topic)
                     return
@@ -219,8 +226,9 @@ class ResultManager(object):
         table.field_names = ["Data ID", "Name", "Topic", "Type", "Version", "Comment"]
 
         with self._ConnCursor(self.db_path) as [_, cursor]:
-            meta_infos = cursor.execute("SELECT DATAID, NAME, TOPIC, DATATYPE, VERSION, INFO FROM META_INFO WHERE DATAID=?",
-                                        (data_id,)).fetchall()
+            meta_infos = cursor.execute(
+                "SELECT DATAID, NAME, TOPIC, DATATYPE, VERSION, INFO FROM META_INFO WHERE DATAID=?",
+                (data_id,)).fetchall()
             for line in meta_infos:
                 table.add_row(line)
 
@@ -272,7 +280,7 @@ class ResultManager(object):
                                          (data_id, curr_max_version)).fetchone()[0]
                 else:
                     uid_res = cursor.execute("SELECT ID FROM META_INFO WHERE DATAID=? AND VERSION=?",
-                                         (data_id, version)).fetchone()
+                                             (data_id, version)).fetchone()
                     if uid_res is None:
                         warnings.warn("Version %s not exists for data %s" % (version, data_id))
                         return

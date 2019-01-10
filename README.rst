@@ -87,7 +87,7 @@ Requirements
 Note
 ----
 
-``ResultManager`` is developed by Python 3.5 and only tested on Python 3.5 and Python 2.7
+``ResultManager`` is developed by Python 3.5 and tested on python 2.6, 2.7, 3.4-3.7
 
 
 Key release notes

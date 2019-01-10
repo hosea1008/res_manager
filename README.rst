@@ -23,12 +23,16 @@ This project helps you to handle your experimental results efficiently when doin
 
 Since it is based on ``pickle``, in theory you can use it to manage all types of data in python, you can even save an object as shown in the following examples.
 
+Installation
+============
+
+``pip install res-manager``
+
 Usage
 =====
 
 Just start with ``from res_manager import ResultManager``, now you can create an object with ``rm = ResultManager(path)`` and then use it to save, load, delete and preview your data.
 
-Install ResultManager with ``pip install res-manager``
 
 ::
 

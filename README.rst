@@ -59,7 +59,7 @@ This project mainly provides:
 * A class named ``ResultManager`` that provides all functions.
 * ``ResultManager.save``: Save your data.
 * ``ResultManager.load``: Loading data by ID.
-* ``ResultManager.print_meta_info``: Print all meta info of saved data, including name, path, topic, comments etc.
+* ``ResultManager.print_meta_info``: Print all meta info of saved data, including data id, name, topic.
 * ``ResultManager.delete_by_id``: Delete data from yor storage.
 * ``ResultManager.update_meta``: Update meta information.
 * ``ResultManager.print_names`` and ``ResultManager.print_comments``： Print names and comments.

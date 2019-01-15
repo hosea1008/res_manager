@@ -167,7 +167,7 @@ class ResultManager(object):
         """
         with self._ConnCursor(self.db_path) as [conn, cursor]:
             self._delete_by_id_nocommit(data_id, version, cursor)
-            conn.commit
+            conn.commit()
 
     def update_meta(self, data_id, name=None, topic=None):
         """

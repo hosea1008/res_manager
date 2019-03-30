@@ -2,7 +2,7 @@
 Experimental Results Manager
 ============================
 
-|PyPI| |Travis build| |License| |Last commit| |Status|
+|PyPI| |Travis build| |License| |Last commit| |Status| |Hits|
 
 .. |PyPI| image:: https://img.shields.io/pypi/v/res-manager.svg
    :target: https://pypi.org/project/res-manager/
@@ -16,6 +16,9 @@ Experimental Results Manager
 .. |Last commit| image:: https://img.shields.io/github/last-commit/hosea1008/res_manager.svg
 
 .. |Status| image:: https://img.shields.io/pypi/status/res-manager.svg
+
+.. |Hits| image:: http://hits.dwyl.io/hosea1008/res_manager.svg
+    :target: http://hits.dwyl.io/hosea1008/res_manager.svg
 
 
 

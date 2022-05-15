@@ -79,7 +79,7 @@ Authors
 
 * Author and lead developer: `Hongshan Li`_
 
-.. _`Hongshan Li`: https://www.hsli.top
+.. _`Hongshan Li`: https://github.com/hosea1008
 
 
 Requirements
